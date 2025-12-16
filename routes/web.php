@@ -2,27 +2,32 @@
 
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
-use Laravel\Socialite\Socialite;
+use Laravel\Socialite\Facades\Socialite;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\RedirectResponse;
 
-
-
-Route::get('/google-auth/redirect', action: function (): RedirectResponse {
-    return Socialite::driver('google')->redirect();
+Route::get('/google-auth/redirect', function () {
+    return Socialite::driver('google')
+        ->stateless()
+        ->redirect();
 });
 
-Route::get('/google-auth/callback', action: function (): RedirectResponse {
+Route::get('/google-auth/callback', function () {
     // 1. Obtener los detalles del usuario de Google
-    $user_google = Socialite::driver('google')->user();
+    $user_google = Socialite::driver('google')
+    ->stateless()
+    ->user();
+    
     $user = User::updateOrCreate(
         attributes: ['google_id' => $user_google->id],
         values: [
             'name' => $user_google->name,
             'email' => $user_google->email,
+            'password' => Hash::make(uniqid()),
         ]
     );
-    Auth::login(user: $user);
+    Auth::login($user);
     return redirect(to: '/dashboard');
 });
 
